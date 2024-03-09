@@ -82,6 +82,15 @@ function M.reduce_hints(hints, key)
     if h.label == nil then
       return h, {}
     elseif h.label ~= prev_label then
+      -- Store the complete lable and current key index.
+      if not h.complete_lable_info then
+        h.complete_label_info = {}
+        h.complete_label_info.label = prev_label
+        h.complete_label_info.current_index = 2
+      else
+        h.complete_label_info.current_index = h.complete_label_info.current_index + 1
+      end
+
       next_hints[#next_hints + 1] = h
     end
   end
@@ -168,6 +177,12 @@ end
 function M.set_hint_extmarks(hl_ns, hints, opts)
   for _, hint in pairs(hints) do
     local label = hint.label
+    local currend_index = 1
+    if hint.complete_label_info then
+      label = hint.complete_label_info.label
+      currend_index = hint.complete_label_info.currend_index
+    end
+
     if opts.uppercase_labels and label ~= nil then
       label = label:upper()
     end
@@ -176,7 +191,11 @@ function M.set_hint_extmarks(hl_ns, hints, opts)
     -- Get the byte index of the second hint so that we can slice it correctly
     if label ~= nil and vim.fn.strdisplaywidth(label) ~= 1 then
       local snd_idx = vim.fn.byteidx(label, 1)
-      virt_text = { { label:sub(1, snd_idx), 'HopNextKey1' }, { label:sub(snd_idx + 1), 'HopNextKey2' } }
+      if currend_index == 1 then
+        virt_text = { { label:sub(1, snd_idx), 'HopNextKey1' }, { label:sub(snd_idx + 1), 'HopNextKey2' } }
+      else
+        virt_text = { { label:sub(1, snd_idx), 'HopNextKey2' }, { label:sub(snd_idx + 1), 'HopNextKey1' } }
+      end
     end
 
     local row, col = window.pos2extmark(hint.jump_target.cursor)
